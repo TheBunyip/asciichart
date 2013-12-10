@@ -1,15 +1,16 @@
 require 'colorize'
 
 class AsciiChart
-	attr_reader :maxx, :miny, :maxy, :series
+	attr_reader :max_x, :min_y, :max_y, :series
+	attr_accessor :colourise
 
-	def initialize(rows=20)
-		@rows = rows
+	def initialize(num_rows)
+		@num_rows = num_rows
 		@series = []
-		@maxx = 0
-		@miny = 0
-		@maxy = 0
-		@@colours = %w{red green blue}.map(&:to_sym)
+		@max_x = 0
+		@min_y = 0
+		@max_y = 0
+		@@colours = %w{red yellow green cyan magenta blue}.map(&:to_sym)
 	end
 
 	def add_series(series, name=nil)
@@ -18,9 +19,9 @@ class AsciiChart
 			colour: pick_colour(@series.length), 
 			name: name ? name.capitalize : "Series #{@series.length}"
 		}
-		@miny = [series.min, @miny].min
-		@maxy = [series.max, @maxy].max
-		@maxx = [series.length, @maxx].max
+		@min_y = [series.min, @min_y].min
+		@max_y = [series.max, @max_y].max
+		@max_x = [series.length, @max_x].max
 	end
 
 	def num_series
@@ -30,18 +31,18 @@ class AsciiChart
 	def render
 		# we need one column for each series up the maximum 
 		# length of any one series, plus one for padding
-		width = ((num_series + 2) * @maxx) + 2
-		step = (@maxy - @miny) / @rows.to_f
-		y_top = @maxy.to_f
+		width = ((num_series + 2) * @max_x) + 2
+		step = (@max_y - @min_y) / @num_rows.to_f
+		y_top = @max_y.to_f
 		
 		bitmap = '-' * (width + 2)
 		bitmap += "\r\n|" + (' ' * width) + '|'
 
-		@rows.times do
+		@num_rows.times do
 			bitmap += "\r\n|  "
 			
 			# loop on each distinct time/x value
-			@maxx.times do |x|
+			@max_x.times do |x|
 				@series.each do |s|
 					bitmap += get_ascii_char(s, x, (y_top - step)..y_top)
 				end
@@ -55,12 +56,12 @@ class AsciiChart
 		# the legend
 		bitmap += "\r\n"
 		@series.each do |s|
-			bitmap += "\r\n" + s[:name].send(s[:colour])
+			bitmap += "\r\n" + (@colourise ? s[:name].send(s[:colour]) : s[:name])
 		end
-
-		puts bitmap
+		bitmap
 	end
 
+private
 	def get_ascii_char(series, time, value_range)
 		# returns an ascii character to represent the value-range for the given series at the given time
 		# if the series does not have a high enough value at that time, we return ' '
@@ -72,14 +73,11 @@ class AsciiChart
 		else
 			c = ' '
 		end
-		c.send(series[:colour])
+		@colourise ? c.send(series[:colour]) : c
 	end
 
 	def pick_colour(index)
 		@@colours[index % @@colours.length]
 	end
-
-
-
 end
 

@@ -1,21 +1,36 @@
-require_relative './asciichart'
+require_relative '../lib/asciichart'
 require_relative './spec_helper'
 
 describe 'graph' do
-	before(:each) do
-		@graph = AsciiChart.new 10, 20, 110, 220
-	end
-
 	it 'can be created' do
-		expect(@graph.xstep).to eq(0.2)
-		expect(@graph.ystep).to eq(0.1)
-		expect(@graph.xrange).to eq(100)
-		expect(@graph.yrange).to eq(200)
+		graph = AsciiChart.new 10
+		expect(graph.num_series).to eq(0)
+		expect(graph.max_x).to eq(0)
+		expect(graph.min_y).to eq(0)
+		expect(graph.max_y).to eq(0)
 	end
 
 	it 'can have a series added' do
-		@graph.add_series([10, 20, 30, 40, 50])
-		expect(@graph.num_series).to eq(1)
+		graph = AsciiChart.new 2
+		graph.add_series([10, 20, 30])
+		graph.add_series([15, 15, 10])
+		expect(graph.num_series).to eq(2)
+		expect(graph.max_x).to eq(3)
+		expect(graph.min_y).to eq(0)
+		expect(graph.max_y).to eq(30)
+	end
+
+	it 'renders correctly' do
+		graph = AsciiChart.new 2
+		graph.add_series([10, 20])
+		expect(graph.render).to eq(
+			"----------\r\n" +
+			"|        |\r\n" +
+			"|     #  |\r\n" +
+			"|  #  #  |\r\n" +
+			"----------\r\n\r\n" +
+			"Series 0"
+		)
 	end
 
 end
