@@ -1,11 +1,14 @@
 require 'colorize'
 
 class AsciiChart
-	attr_reader :max_x, :min_y, :max_y, :series
-	attr_accessor :colourise
+	attr_reader :max_x, :min_y, :max_y, :series, :colourise
+	attr_writer :num_rows, :bar_thickness, :bar_spacing
 
-	def initialize(num_rows)
-		@num_rows = num_rows
+	def initialize
+		@num_rows = 10
+		@bar_thickness = 1
+		@bar_spacing = 2
+		@colourise = false
 		@series = []
 		@max_x = 0
 		@min_y = 0
@@ -31,7 +34,7 @@ class AsciiChart
 	def render
 		# we need one column for each series up the maximum 
 		# length of any one series, plus one for padding
-		width = ((num_series + 2) * @max_x) + 2
+		width = ((num_series + @bar_spacing) * @max_x * @bar_thickness) + @bar_spacing
 		step = (@max_y - @min_y) / @num_rows.to_f
 		y_top = @max_y.to_f
 		
@@ -39,14 +42,14 @@ class AsciiChart
 		bitmap += "\r\n|" + (' ' * width) + '|'
 
 		@num_rows.times do
-			bitmap += "\r\n|  "
+			bitmap += "\r\n|" + (' ' * @bar_spacing)
 			
 			# loop on each distinct time/x value
 			@max_x.times do |x|
 				@series.each do |s|
-					bitmap += get_ascii_char(s, x, (y_top - step)..y_top)
+					bitmap += get_ascii_char(s, x, (y_top - step)..y_top) * @bar_thickness
 				end
-				bitmap += '  '
+				bitmap += ' ' * @bar_spacing
 			end
 			bitmap += '|'
 			y_top = (y_top - step).round(2)
@@ -59,6 +62,19 @@ class AsciiChart
 			bitmap += "\r\n" + (@colourise ? s[:name].send(s[:colour]) : s[:name])
 		end
 		bitmap
+	end
+
+	def colourise=(value)
+		if value and ENV['OS'] == 'Windows_NT'
+			if Gem::Specification::find_all_by_name('win32console').any?
+				@colourise = true
+				require 'win32console'
+			else
+				raise "Cannot colourise a chart without the 'win32console' gem installed"
+			end
+		else
+			@colourise = value
+		end
 	end
 
 private
